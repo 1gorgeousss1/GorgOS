@@ -7,7 +7,8 @@ $(TARGET): $(SRC)
 	nasm -f bin $(SRC) -o $(TARGET)
 
 run: $(TARGET)
-	qemu-system-x86_64 -drive format=raw,file=$(TARGET)
+	qemu-system-i386 -fda $(TARGET)
+
 
 clean: 
 	rm -f $(TARGET)
