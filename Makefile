@@ -1,16 +1,24 @@
-TARGET = bootloader.bin
-SRC = bootloader/bootloader.asm
+CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
+CFLAGS = -g
 
-all: $(TARGET)
+os-image.bin: bootloader/bootloader.bin kernel.bin
+	cat $^ > os-image.bin
 
-$(TARGET): $(SRC)
-	nasm -f bin $(SRC) -o $(TARGET)
+kernel.bin: bootloader/entry_kernel.o ${OBJ}
+	i386-elf-ld -o $@ -Ttext 0x1000 $^
 
-run: $(TARGET)
-	qemu-system-i386 -fda $(TARGET)
+run: os-image.bin
+	qemu-system-i386 -fda os-image.bin
 
+%.o: %.c ${HEADERS}
+	${CC} ${CFLAGS} -ffreestanding -c $< -o $@
 
-clean: 
-	rm -f $(TARGET)
+%.o: %.asm
+	nasm $< -f elf -o $@
 
+%.bin: %.asm
+	nasm $< -f bin -o $@
 
+clean:
+	rm -rf *.bin *.dis *.o os-image.bin *.elf
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o
