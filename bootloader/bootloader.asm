@@ -1,6 +1,7 @@
 [org 0x7C00]              ; относительно этого адреса 
 bits 16                   ; сообщаем NASM в каком режиме будем работать
 
+KERNEL equ 0x1000
 
 
     mov bx, HELLO
@@ -23,13 +24,18 @@ bits 16                   ; сообщаем NASM в каком режиме б�
 %include "bootloader/switch_to_pm.asm"
 %include "bootloader/gdt.asm"
 
+
+bits 32
+PROTECTED_MODE:
+    call KERNEL
+    jmp $
+
 HELLO:
     db 'Welcome, my brothers!!!', 0
 
 SUCCESS:
     db 'SUCCESS', 0
 
-KERNEL equ 0x1000
 
 times 510 - ($ - $$) db 0
 dw 0xAA55
