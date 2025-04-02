@@ -31,5 +31,5 @@ init:
     mov ebp, 0x90000
     mov esp, ebp
 
-    call KERNEL
+    call PROTECTED_MODE
     jmp $
