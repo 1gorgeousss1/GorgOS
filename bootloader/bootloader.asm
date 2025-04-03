@@ -1,7 +1,6 @@
 [org 0x7C00]              ; относительно этого адреса 
 bits 16                   ; сообщаем NASM в каком режиме будем работать
 
-KERNEL equ 0x1000
 
 
     mov bx, HELLO
@@ -10,7 +9,7 @@ KERNEL equ 0x1000
     call print_new_line
 
     mov bx, KERNEL        ; из этого регистра будет браться, в который загрузится ядро
-    mov dh, 64
+    mov dh, 20
     call load_sectors
 
     mov bx, SUCCESS
@@ -27,6 +26,7 @@ KERNEL equ 0x1000
 
 bits 32
 PROTECTED_MODE:
+
     call KERNEL
     jmp $
 
@@ -36,6 +36,7 @@ HELLO:
 SUCCESS:
     db 'SUCCESS', 0
 
+KERNEL equ 0x1000
 
 times 510 - ($ - $$) db 0
 dw 0xAA55
