@@ -8,7 +8,7 @@ switch_to_pm:
     or al, 2
     out 0x92, al
 
-    ; загружаем указатель на gdt
+   ; загружаем указатель на gdt
     lgdt [gdt_ptr]
 
     mov eax, cr0
