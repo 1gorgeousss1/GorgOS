@@ -14,7 +14,7 @@ os-image.bin: bootloader/bootloader.bin kernel.bin
 
 # Сборка ядра
 kernel.bin: ${KERNEL_OBJS}
-	i386-elf-ld $(LDFLAGS) -o $@ $^
+	i386-elf-ld -o $@ $(LDFLAGS) $^ --oformat binary
 
 # Сборка загрузчика
 bootloader/bootloader.bin: bootloader/bootloader.asm
