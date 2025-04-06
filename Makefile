@@ -1,38 +1,46 @@
-# Компилятор и флаги
+C_SOURCES = $(wildcard kernel/*.c ports/*.c drivers/*.c )
+HEADERS = $(wildcard kernel/*.h ports/*.h drivers/*.h)
+# Nice syntax for file extension replacement
+OBJ = ${C_SOURCES:.c=.o}
+
+# Change this if your cross-compiler is somewhere else
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
-CFLAGS = -g -ffreestanding -nostdlib -Wall -Wextra
-LDFLAGS = -Ttext 0x1000 # Указываем точку входа _start
-AS = nasm
-ASFLAGS = -f elf
+GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
+# -g: Use debugging symbols in gcc
+CFLAGS = -g
 
-# Список объектных файлов ядра
-KERNEL_OBJS = bootloader/entry_kernel.o kernel/kernel.o  # Добавьте все ваши .o файлы
-
-# Итоговый образ ОС
+# First rule is run by default
 os-image.bin: bootloader/bootloader.bin kernel.bin
 	cat $^ > os-image.bin
 
-# Сборка ядра
-kernel.bin: ${KERNEL_OBJS}
-	i386-elf-ld -o $@ $(LDFLAGS) $^ --oformat binary
+# '--oformat binary' deletes all symbols as a collateral, so we don't need
+# to 'strip' them manually on this case
+kernel.bin: bootloader/entry_kernel.o ${OBJ}
+	i386-elf-ld -o $@ -Ttext 0x1000 $^ --oformat binary
 
-# Сборка загрузчика
-bootloader/bootloader.bin: bootloader/bootloader.asm
-	$(AS) -f bin $< -o $@
+# Used for debugging purposes
+kernel.elf: bootloader/entry_kernel.o ${OBJ}
+	i386-elf-ld -o $@ -Ttext 0x1000 $^ 
 
-# Правила для C-файлов
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Правила для ассемблерных файлов
-%.o: %.asm
-	$(AS) $(ASFLAGS) -o $@ $<
-
-# Запуск в QEMU
 run: os-image.bin
-	qemu-system-i386 -drive if=floppy,format=raw,file=os-image.bin
+	qemu-system-i386 -fda os-image.bin
 
-# Очистка
+# Open the connection to qemu and load our kernel-object file with symbols
+debug: os-image.bin kernel.elf
+	qemu-system-i386 -s -fda os-image.bin &
+	${GDB} -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
+
+# Generic rules for wildcards
+# To make an object, always compile from its .c
+%.o: %.c ${HEADERS}
+	${CC} ${CFLAGS} -ffreestanding -c $< -o $@
+
+%.o: %.asm
+	nasm $< -f elf -o $@
+
+%.bin: %.asm
+	nasm $< -f bin -o $@
+
 clean:
-	rm -rf *.bin *.elf
-	rm -rf kernel/*.o bootloader/*.bin bootloader/*.o
+	rm -rf *.bin *.dis *.o os-image.bin *.elf
+	rm -rf kernel/*.o bootloader/*.bin drivers/*.o bootloader/*.o
